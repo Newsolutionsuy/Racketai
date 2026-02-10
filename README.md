@@ -8,7 +8,7 @@ Backend MVP para subir videos, procesarlos de forma asíncrona y devolver feedba
 - **PostgreSQL + TypeORM**
 - **BullMQ + Redis** para procesamiento asíncrono
 - **Filesystem local** para almacenamiento de videos (`/uploads`)
-- **Microservicio Python (mock IA)** para análisis
+- **Microservicio Python (IA con OpenAI + fallback local)** para análisis
 
 ## Setup rápido
 
@@ -21,6 +21,24 @@ npm run start:dev
 
 La API queda en `http://localhost:3000`.
 
+
+
+## Configuración IA (OpenAI)
+
+El microservicio de análisis usa OpenAI si encuentra `OPENAI_API_KEY`.
+Si no existe (o hay error), cae automáticamente al análisis mock local.
+
+Variables opcionales:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (default: `gpt-4o-mini`)
+
+Ejemplo:
+
+```bash
+export OPENAI_API_KEY="tu_api_key"
+export OPENAI_MODEL="gpt-4o-mini"
+```
 
 ## Frontend simple para subida
 
@@ -99,7 +117,8 @@ Contrato:
     "videoPath": "...",
     "sport": "tennis",
     "stroke": "forehand",
-    "handedness": "right"
+    "handedness": "right",
+    "view": "side"
   }
   ```
 - Output:
