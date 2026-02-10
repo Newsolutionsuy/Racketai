@@ -8,7 +8,7 @@ Backend MVP para subir videos, procesarlos de forma asíncrona y devolver feedba
 - **PostgreSQL + TypeORM**
 - **BullMQ + Redis** para procesamiento asíncrono
 - **Filesystem local** para almacenamiento de videos (`/uploads`)
-- **Microservicio Python (IA con OpenAI + fallback local)** para análisis
+- **Microservicio Python (OpenCV + MediaPipe Pose + reglas + LLM para redacción)**
 
 ## Setup rápido
 
@@ -21,24 +21,17 @@ npm run start:dev
 
 La API queda en `http://localhost:3000`.
 
+## Configuración IA (OpenAI-compatible)
 
-
-## Configuración IA (OpenAI)
-
-El microservicio de análisis usa OpenAI si encuentra `OPENAI_API_KEY`.
-Si no existe (o hay error), cae automáticamente al análisis mock local.
+El microservicio calcula métricas de técnica con reglas determinísticas y usa un LLM solo para convertir esas métricas a texto legible.
 
 Variables opcionales:
 
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL` (default: `gpt-4o-mini`)
+- `OPENAI_BASE_URL` (para proveedores OpenAI-compatible)
 
-Ejemplo:
-
-```bash
-export OPENAI_API_KEY="tu_api_key"
-export OPENAI_MODEL="gpt-4o-mini"
-```
+Si no hay `OPENAI_API_KEY`, el servicio devuelve feedback local determinístico.
 
 ## Frontend simple para subida
 
@@ -47,7 +40,6 @@ También puedes usar una interfaz web mínima en `GET /` para subir el video y v
 1. Abre `http://localhost:3000`.
 2. Completa metadata + archivo.
 3. Haz click en **Subir y procesar**.
-
 
 ## Flujo MVP
 
@@ -89,13 +81,19 @@ Respuesta:
   "videoId": "uuid",
   "status": "done",
   "analysis": {
-    "summary": "Solid preparation, but contact point is late.",
-    "details": "Try starting your unit turn earlier and rotating your hips sooner."
+    "summary": "The stroke has a solid base, with a few fixable points.",
+    "details": "Focus on these corrections: contact is late; hip rotation is limited.",
+    "metrics": {
+      "contact_timing": "late",
+      "hip_rotation": "low",
+      "shoulder_hip_separation": "ok",
+      "balance": "stable"
+    }
   }
 }
 ```
 
-## Microservicio de análisis (mock)
+## Microservicio de análisis
 
 Directorio: `python_service/`
 
@@ -111,10 +109,10 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 Contrato:
 - `POST /analyze`
-- Input:
+- Input (acepta `video_path` o `videoPath`):
   ```json
   {
-    "videoPath": "...",
+    "video_path": "uploads/stroke.mp4",
     "sport": "tennis",
     "stroke": "forehand",
     "handedness": "right",
@@ -124,7 +122,13 @@ Contrato:
 - Output:
   ```json
   {
-    "summary": "Solid preparation, but contact point is late.",
-    "details": "Try starting your unit turn earlier and rotating your hips sooner."
+    "summary": "Your preparation is solid, but contact happens too late.",
+    "details": "Start your unit turn earlier and rotate your hips sooner before contact.",
+    "metrics": {
+      "contact_timing": "late",
+      "hip_rotation": "low",
+      "shoulder_hip_separation": "ok",
+      "balance": "stable"
+    }
   }
   ```
