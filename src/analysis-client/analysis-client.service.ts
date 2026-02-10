@@ -14,6 +14,8 @@ interface AnalyzeInput {
 interface AnalyzeOutput {
   summary: string;
   details: string;
+  analyzedBy: string;
+  couldNotUseAIReason?: string | null;
 }
 
 @Injectable()

@@ -59,7 +59,14 @@ export class VideosController {
   ): Promise<{
     videoId: string;
     status: string;
-    analysis: { summary: string; details: string } | null;
+    analysis:
+      | {
+          summary: string;
+          details: string;
+          analyzedBy: string;
+          couldNotUseAIReason: string | null;
+        }
+      | null;
   }> {
     return this.videosService.getVideoById(id);
   }

@@ -26,6 +26,12 @@ export class Analysis {
   @Column('text')
   details!: string;
 
+  @Column({ default: 'unknown' })
+  analyzedBy!: string;
+
+  @Column('text', { nullable: true })
+  couldNotUseAIReason?: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 }

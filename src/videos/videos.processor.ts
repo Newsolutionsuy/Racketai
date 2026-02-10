@@ -25,7 +25,13 @@ export class VideosProcessor extends WorkerHost {
         view: video.view,
       });
 
-      await this.videosService.saveAnalysis(videoId, analysis.summary, analysis.details);
+      await this.videosService.saveAnalysis(
+        videoId,
+        analysis.summary,
+        analysis.details,
+        analysis.analyzedBy,
+        analysis.couldNotUseAIReason ?? null,
+      );
     } catch (_error) {
       await this.videosService.markAsFailed(videoId);
       throw _error;
