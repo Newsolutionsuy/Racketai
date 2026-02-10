@@ -33,6 +33,22 @@ Variables opcionales:
 
 Si no hay `OPENAI_API_KEY`, el servicio devuelve feedback local determinístico.
 
+
+### Solución rápida: `Import "fastapi"/"numpy" could not be resolved`
+
+Si VS Code/Pylance muestra ese error (por ejemplo en `python_service/main.py` o archivos de métricas), asegúrate de crear la venv e instalar dependencias:
+
+```bash
+cd python_service
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Además, el repo ahora incluye `pyrightconfig.json` para que Pyright/Pylance busque dependencias en `python_service/.venv` automáticamente.
+Si usas VS Code, también se agregó `.vscode/settings.json` para apuntar automáticamente al intérprete `python_service/.venv/bin/python` dentro de este workspace.
+
+
 ## Frontend simple para subida
 
 También puedes usar una interfaz web mínima en `GET /` para subir el video y ver el estado de procesamiento en vivo.
