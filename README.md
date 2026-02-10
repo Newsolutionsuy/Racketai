@@ -33,6 +33,20 @@ Variables opcionales:
 
 Si no hay `OPENAI_API_KEY`, el servicio devuelve feedback local determinístico.
 
+
+### Solución rápida: `Import "fastapi" could not be resolved`
+
+Si VS Code/Pylance muestra ese error en `python_service/main.py`, asegúrate de abrir el intérprete de la venv del microservicio:
+
+```bash
+cd python_service
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Además, el repo ahora incluye `pyrightconfig.json` para que Pyright/Pylance busque dependencias en `python_service/.venv` automáticamente.
+
 ## Frontend simple para subida
 
 También puedes usar una interfaz web mínima en `GET /` para subir el video y ver el estado de procesamiento en vivo.
