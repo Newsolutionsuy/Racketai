@@ -6,8 +6,10 @@ import { VideosModule } from './videos/videos.module';
 import { Video } from './videos/entities/video.entity';
 import { Analysis } from './analysis/entities/analysis.entity';
 import { AnalysisClientModule } from './analysis-client/analysis-client.module';
+import { AppController } from './app.controller';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
