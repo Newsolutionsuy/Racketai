@@ -21,6 +21,16 @@ npm run start:dev
 
 La API queda en `http://localhost:3000`.
 
+
+## Frontend simple para subida
+
+También puedes usar una interfaz web mínima en `GET /` para subir el video y ver el estado de procesamiento en vivo.
+
+1. Abre `http://localhost:3000`.
+2. Completa metadata + archivo.
+3. Haz click en **Subir y procesar**.
+
+
 ## Flujo MVP
 
 1. `POST /videos` recibe video y metadata.
