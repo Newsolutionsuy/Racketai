@@ -22,6 +22,7 @@ export class VideosProcessor extends WorkerHost {
         sport: video.sport,
         stroke: video.stroke,
         handedness: video.handedness,
+        view: video.view,
       });
 
       await this.videosService.saveAnalysis(videoId, analysis.summary, analysis.details);

@@ -8,6 +8,7 @@ interface AnalyzeInput {
   sport: string;
   stroke: string;
   handedness: string;
+  view?: string;
 }
 
 interface AnalyzeOutput {
