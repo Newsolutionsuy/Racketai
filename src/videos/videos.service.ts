@@ -3,8 +3,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { readdir } from 'fs/promises';
+import { join, basename } from 'path';
 import { Analysis } from '../analysis/entities/analysis.entity';
 import { UploadVideoDto } from './dto/upload-video.dto';
+import { AnalyzeExistingVideoDto } from './dto/analyze-existing-video.dto';
 import { Video } from './entities/video.entity';
 
 @Injectable()
@@ -24,6 +27,44 @@ export class VideosService {
   ): Promise<{ videoId: string; status: 'uploaded' }> {
     const createdVideo = this.videosRepository.create({
       ...uploadVideoDto,
+      videoPath,
+      status: 'uploaded',
+    });
+
+    const video = await this.videosRepository.save(createdVideo);
+
+    await this.videoAnalysisQueue.add('analyze-video', { videoId: video.id });
+
+    await this.videosRepository.update({ id: video.id }, { status: 'processing' });
+
+    return {
+      videoId: video.id,
+      status: 'uploaded',
+    };
+  }
+
+  async getUploads(): Promise<string[]> {
+    const uploadsPath = './uploads';
+    try {
+      const files = await readdir(uploadsPath);
+      return files.filter((file) => file !== '.gitkeep');
+    } catch (error) {
+      console.error('Error reading uploads directory:', error);
+      return [];
+    }
+  }
+
+  async createFromExisting(
+    dto: AnalyzeExistingVideoDto,
+  ): Promise<{ videoId: string; status: 'uploaded' }> {
+    const safeFilename = basename(dto.filename);
+    const videoPath = join('uploads', safeFilename);
+
+    const createdVideo = this.videosRepository.create({
+      sport: dto.sport,
+      stroke: dto.stroke,
+      handedness: dto.handedness,
+      view: dto.view,
       videoPath,
       status: 'uploaded',
     });

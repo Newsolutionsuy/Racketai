@@ -14,6 +14,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { randomUUID } from 'crypto';
 import { UploadVideoDto } from './dto/upload-video.dto';
+import { AnalyzeExistingVideoDto } from './dto/analyze-existing-video.dto';
 import { VideosService } from './videos.service';
 
 @Controller('videos')
@@ -51,6 +52,18 @@ export class VideosController {
     }
 
     return this.videosService.createVideo(body, file.path);
+  }
+
+  @Get('uploads')
+  async getUploads(): Promise<string[]> {
+    return this.videosService.getUploads();
+  }
+
+  @Post('existing')
+  async analyzeExisting(
+    @Body() body: AnalyzeExistingVideoDto,
+  ): Promise<{ videoId: string; status: 'uploaded' }> {
+    return this.videosService.createFromExisting(body);
   }
 
   @Get(':id')
