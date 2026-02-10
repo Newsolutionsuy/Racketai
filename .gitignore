@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+uploads/*
+!uploads/.gitkeep
+.python-version
+python_service/.venv
+# Python cache artifacts
+__pycache__/
+*.pyc
+*.pyo
+
