@@ -149,7 +149,7 @@ export class AppController {
           const response = await fetch('/videos/' + videoId);
           const data = await response.json();
 
-          setStatus('Estado: ' + data.status + '\n\n' + JSON.stringify(data, null, 2));
+          setStatus('Estado: ' + data.status + '\\n\\n' + JSON.stringify(data, null, 2));
 
           if (data.status === 'done' || data.status === 'failed') {
             return;
@@ -184,7 +184,7 @@ export class AppController {
           }
 
           const uploadData = await uploadResponse.json();
-          setStatus('Video subido: ' + uploadData.videoId + '\nIniciando procesamiento...');
+          setStatus('Video subido: ' + uploadData.videoId + '\\nIniciando procesamiento...');
           await pollVideo(uploadData.videoId);
         } catch (error) {
           setStatus('Error: ' + error.message);
