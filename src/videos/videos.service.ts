@@ -43,7 +43,14 @@ export class VideosService {
   async getVideoById(id: string): Promise<{
     videoId: string;
     status: string;
-    analysis: { summary: string; details: string } | null;
+    analysis:
+      | {
+          summary: string;
+          details: string;
+          analyzedBy: string;
+          couldNotUseAIReason: string | null;
+        }
+      | null;
   }> {
     const video = await this.videosRepository.findOne({
       where: { id },
@@ -61,17 +68,27 @@ export class VideosService {
         ? {
             summary: video.analysis.summary,
             details: video.analysis.details,
+            analyzedBy: video.analysis.analyzedBy,
+            couldNotUseAIReason: video.analysis.couldNotUseAIReason ?? null,
           }
         : null,
     };
   }
 
-  async saveAnalysis(videoId: string, summary: string, details: string): Promise<void> {
+  async saveAnalysis(
+    videoId: string,
+    summary: string,
+    details: string,
+    analyzedBy: string,
+    couldNotUseAIReason: string | null,
+  ): Promise<void> {
     await this.analysisRepository.save(
       this.analysisRepository.create({
         videoId,
         summary,
         details,
+        analyzedBy,
+        couldNotUseAIReason,
       }),
     );
 

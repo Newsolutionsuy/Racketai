@@ -149,7 +149,16 @@ export class AppController {
           const response = await fetch('/videos/' + videoId);
           const data = await response.json();
 
-          setStatus('Estado: ' + data.status + '\\n\\n' + JSON.stringify(data, null, 2));
+          let analysisInfo = '';
+          if (data.analysis) {
+            analysisInfo = '\\n\\nAnalisis realizado por: ' + data.analysis.analyzedBy;
+
+            if (data.analysis.couldNotUseAIReason) {
+              analysisInfo += '\\nMotivo por el cual no se uso IA: ' + data.analysis.couldNotUseAIReason;
+            }
+          }
+
+          setStatus('Estado: ' + data.status + analysisInfo + '\\n\\n' + JSON.stringify(data, null, 2));
 
           if (data.status === 'done' || data.status === 'failed') {
             return;
