@@ -1,6 +1,8 @@
+import base64
 import json
 import os
 
+import cv2
 from fastapi import FastAPI
 from openai import OpenAI
 from pydantic import BaseModel
@@ -22,6 +24,36 @@ class AnalyzeResponse(BaseModel):
 
 
 app = FastAPI()
+
+
+def extract_frames(video_path: str, num_frames: int = 5):
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found at {video_path}")
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise ValueError(f"Could not open video file {video_path}")
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if total_frames <= 0:
+        raise ValueError(f"Video file {video_path} has no frames")
+
+    # Pick frames at regular intervals
+    frame_indices = [int(i * total_frames / num_frames) for i in range(num_frames)]
+
+    base64_frames = []
+    for idx in frame_indices:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        success, frame = cap.read()
+        if success:
+            _, buffer = cv2.imencode('.jpg', frame)
+            base64_frames.append(base64.b64encode(buffer).decode('utf-8'))
+
+    cap.release()
+    if not base64_frames:
+        raise ValueError(f"Failed to extract any frames from {video_path}")
+
+    return base64_frames
 
 
 def build_fallback_analysis(payload: AnalyzeRequest) -> AnalyzeResponse:
@@ -47,25 +79,48 @@ def generate_ai_analysis(payload: AnalyzeRequest) -> AnalyzeResponse:
     model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
     client = OpenAI(api_key=api_key)
 
-    prompt = (
-        'You are an expert racket sports coach. The video itself is not available, '
-        'only metadata from the upload. Return concise coaching feedback in JSON with '
-        'keys "summary" and "details". '\
-        f'Input metadata: sport={payload.sport}, stroke={payload.stroke}, '
-        f'handedness={payload.handedness}, view={payload.view or "unknown"}. '
-        'Make feedback practical and specific, avoid mentioning missing video.'
-    )
+    # Extract frames for visual analysis
+    base64_frames = extract_frames(payload.videoPath)
 
-    response = client.responses.create(
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an expert racket sports coach. Analyze the provided video frames of a stroke "
+                "and provide constructive feedback. Return feedback in JSON format with "
+                "keys 'summary' and 'details'."
+            )
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "content": (
+                        f"Input metadata: sport={payload.sport}, stroke={payload.stroke}, "
+                        f"handedness={payload.handedness}, view={payload.view or 'unknown'}. "
+                        "Please analyze these frames and provide specific coaching advice."
+                    )
+                },
+                *[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{frame}"}
+                    }
+                    for frame in base64_frames
+                ]
+            ]
+        }
+    ]
+
+    response = client.chat.completions.create(
         model=model,
-        input=prompt,
+        messages=messages,
         temperature=0.4,
+        response_format={"type": "json_object"}
     )
 
-    content = response.output_text.strip()
-    if content.startswith('```'):
-        content = content.replace('```json', '').replace('```', '').strip()
-
+    content = response.choices[0].message.content.strip()
     parsed = json.loads(content)
     summary = str(parsed.get('summary', '')).strip()
     details = str(parsed.get('details', '')).strip()
