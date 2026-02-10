@@ -151,7 +151,11 @@ export class AppController {
 
           let analysisInfo = '';
           if (data.analysis) {
-            analysisInfo = '\\n\\nAnalisis realizado por: ' + data.analysis.analyzedBy;
+            const analyzedBy = data.analysis.analyzedBy && data.analysis.analyzedBy !== 'unknown'
+              ? data.analysis.analyzedBy
+              : 'no reportado';
+
+            analysisInfo = '\\n\\nAnalisis realizado por: ' + analyzedBy;
 
             if (data.analysis.couldNotUseAIReason) {
               analysisInfo += '\\nMotivo por el cual no se uso IA: ' + data.analysis.couldNotUseAIReason;
