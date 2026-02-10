@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Analysis } from '../analysis/entities/analysis.entity';
 import { UploadVideoDto } from './dto/upload-video.dto';
-import { Video } from './entities/video.entity';
+import { Video, Handedness, Stroke, View } from './entities/video.entity';
 
 @Injectable()
 export class VideosService {
@@ -19,11 +19,19 @@ export class VideosService {
   ) {}
 
   async createVideo(
-    uploadVideoDto: UploadVideoDto,
+    videoData: {
+      sport: string;
+      stroke: Stroke;
+      handedness: Handedness;
+      view?: View;
+    },
     videoPath: string,
   ): Promise<{ videoId: string; status: 'uploaded' }> {
     const createdVideo = this.videosRepository.create({
-      ...uploadVideoDto,
+      sport: videoData.sport,
+      stroke: videoData.stroke,
+      handedness: videoData.handedness,
+      view: videoData.view,
       videoPath,
       status: 'uploaded',
     });
@@ -82,15 +90,29 @@ export class VideosService {
     analyzedBy: string,
     couldNotUseAIReason: string | null,
   ): Promise<void> {
-    await this.analysisRepository.save(
-      this.analysisRepository.create({
-        videoId,
-        summary,
-        details,
-        analyzedBy,
-        couldNotUseAIReason,
-      }),
-    );
+    const existingAnalysis = await this.analysisRepository.findOne({ where: { videoId } });
+
+    if (existingAnalysis) {
+      await this.analysisRepository.update(
+        { id: existingAnalysis.id },
+        {
+          summary,
+          details,
+          analyzedBy,
+          couldNotUseAIReason,
+        },
+      );
+    } else {
+      await this.analysisRepository.save(
+        this.analysisRepository.create({
+          videoId,
+          summary,
+          details,
+          analyzedBy,
+          couldNotUseAIReason,
+        }),
+      );
+    }
 
     await this.videosRepository.update({ id: videoId }, { status: 'done' });
   }

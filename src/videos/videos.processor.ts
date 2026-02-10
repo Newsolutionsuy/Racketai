@@ -14,6 +14,7 @@ export class VideosProcessor extends WorkerHost {
 
   async process(job: Job<{ videoId: string }>): Promise<void> {
     const { videoId } = job.data;
+    console.log(`[VideosProcessor] Starting analysis for videoId: ${videoId}`);
 
     try {
       const video = await this.videosService.getVideoForAnalysis(videoId);
@@ -24,6 +25,8 @@ export class VideosProcessor extends WorkerHost {
         handedness: video.handedness,
         view: video.view,
       });
+
+      console.log(`[VideosProcessor] Received analysis from client:`, analysis);
 
       await this.videosService.saveAnalysis(
         videoId,

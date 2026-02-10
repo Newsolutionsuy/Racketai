@@ -133,12 +133,16 @@ def generate_ai_analysis(payload: AnalyzeRequest) -> AnalyzeResponse:
 
 @app.post('/analyze', response_model=AnalyzeResponse)
 def analyze_video(payload: AnalyzeRequest) -> AnalyzeResponse:
+    print(f"Received analyze request for: {payload.videoPath}")
     ai_error_reason: str | None = None
 
     try:
-        return generate_ai_analysis(payload)
+        result = generate_ai_analysis(payload)
+        print(f"AI analysis successful: {result.analyzedBy}")
+        return result
     except Exception as error:
         ai_error_reason = str(error).strip() or 'Unknown AI analysis error'
+        print(f"AI analysis failed, falling back. Reason: {ai_error_reason}")
 
     fallback_analysis = build_fallback_analysis(payload)
     fallback_analysis.couldNotUseAIReason = ai_error_reason
