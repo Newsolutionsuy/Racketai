@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 *.pyo
 
+OPENAI_API_KEY=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
+OPENAI_MODEL=gpt-4o-mini
+

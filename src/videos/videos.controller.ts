@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { randomUUID } from 'crypto';
+import type { StrokeMetrics } from '../analysis-client/analysis-client.service';
 import { UploadVideoDto } from './dto/upload-video.dto';
 import { AnalyzeExistingVideoDto } from './dto/analyze-existing-video.dto';
 import { VideosService } from './videos.service';
@@ -72,10 +73,12 @@ export class VideosController {
   ): Promise<{
     videoId: string;
     status: string;
+    failureReason: string | null;
     analysis:
       | {
           summary: string;
           details: string;
+          metrics: StrokeMetrics | null;
           analyzedBy: string;
           couldNotUseAIReason: string | null;
         }

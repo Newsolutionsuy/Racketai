@@ -35,6 +35,9 @@ export class Video {
   @Column({ default: 'uploaded' })
   status!: VideoStatus;
 
+  @Column('text', { nullable: true })
+  failureReason?: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
-from python_service.schemas import AnalyzeRequest, AnalyzeResponse
-from python_service.service import analyze_stroke
+from schemas import AnalyzeRequest, AnalyzeResponse
+from service import analyze_stroke
 
 app = FastAPI(title="racket.ai-analysis-service", version="0.1.0")
 
@@ -14,4 +14,7 @@ def analyze_video(payload: AnalyzeRequest) -> AnalyzeResponse:
     try:
         return analyze_stroke(payload)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        error_type = exc.__class__.__name__
+        detail = str(exc).strip()
+        message = f"{error_type}: {detail}" if detail else error_type
+        raise HTTPException(status_code=400, detail=message) from exc

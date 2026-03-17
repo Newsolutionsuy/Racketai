@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 Sport = Literal["tennis", "padel"]
 Stroke = Literal["forehand", "backhand"]
@@ -11,10 +11,12 @@ View = Literal["side", "front"]
 
 
 class AnalyzeRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     video_path: str = Field(
         ...,
         description="Local path to a short stroke video",
-        validation_alias=AliasChoices("video_path", "videoPath"),
+        alias="videoPath",
     )
     sport: Sport
     stroke: Stroke
@@ -33,3 +35,5 @@ class AnalyzeResponse(BaseModel):
     summary: str
     details: str
     metrics: MetricsOutput
+    analyzedBy: str
+    couldNotUseAIReason: str | None = None

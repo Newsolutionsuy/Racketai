@@ -6,8 +6,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-from python_service.schemas import Handedness
-from python_service.video_processing import SampledFrame
+from schemas import Handedness
+from video_processing import SampledFrame
 
 
 @dataclass
@@ -22,7 +22,15 @@ class PoseFrameFeatures:
     hip_angle_deg: float
 
 
-mp_pose = mp.solutions.pose
+def _get_mp_pose_module():
+    solutions = getattr(mp, "solutions", None)
+    if solutions is None or not hasattr(solutions, "pose"):
+        raise RuntimeError(
+            "The installed mediapipe package does not expose Pose Solutions "
+            "(mp.solutions.pose). Use Docker analysis-service or Python 3.11."
+        )
+
+    return solutions.pose
 
 
 def _to_xy(landmark, width: int, height: int) -> np.ndarray:
@@ -37,6 +45,7 @@ def _segment_angle_deg(p1: np.ndarray, p2: np.ndarray) -> float:
 def extract_pose_features(frames: list[SampledFrame], handedness: Handedness) -> list[PoseFrameFeatures]:
     """Run MediaPipe Pose and keep only landmarks required by MVP metrics."""
     features: list[PoseFrameFeatures] = []
+    mp_pose = _get_mp_pose_module()
 
     dominant_elbow_idx = (
         mp_pose.PoseLandmark.RIGHT_ELBOW if handedness == "right" else mp_pose.PoseLandmark.LEFT_ELBOW

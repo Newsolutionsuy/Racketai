@@ -29,12 +29,27 @@ export class VideosProcessor extends WorkerHost {
         videoId,
         analysis.summary,
         analysis.details,
-        analysis.analyzedBy,
+        analysis.metrics,
+        analysis.analyzedBy ?? 'rules',
         analysis.couldNotUseAIReason ?? null,
       );
-    } catch (_error) {
-      await this.videosService.markAsFailed(videoId);
-      throw _error;
+    } catch (error) {
+      const failureReason = this.extractErrorMessage(error);
+      await this.videosService.markAsFailed(videoId, failureReason);
+      console.error(`[video-analysis:${videoId}] ${failureReason}`, error);
+      throw error;
     }
+  }
+
+  private extractErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    return 'Unknown error while analyzing the video';
   }
 }

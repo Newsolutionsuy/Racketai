@@ -127,6 +127,23 @@ export class AppController {
       .result-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
       .result-summary { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; }
       .result-details { color: var(--text-muted); font-size: 0.95rem; white-space: pre-wrap; }
+      .metrics-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 640px) {
+        .metrics-grid { grid-template-columns: 1fr; }
+      }
+      .metric-item {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #f8fafc;
+      }
+      .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+      .metric-value { margin-top: 4px; font-weight: 700; color: var(--text); }
       .result-meta { margin-top: 12px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
 
       .hidden { display: none; }
@@ -210,6 +227,14 @@ export class AppController {
                   </select>
                 </div>
             </div>
+            <div class="form-group">
+              <label>Vista (opcional)</label>
+              <select name="view">
+                <option value="">No especificar</option>
+                <option value="side">Lateral</option>
+                <option value="front">Frontal</option>
+              </select>
+            </div>
             <button type="submit" class="btn" id="existing-btn">Analizar Seleccionado</button>
           </form>
         </div>
@@ -226,6 +251,7 @@ export class AppController {
         <div id="result-container" class="result-section hidden">
           <div id="result-summary" class="result-summary"></div>
           <div id="result-details" class="result-details"></div>
+          <div id="result-metrics" class="metrics-grid"></div>
           <div id="result-meta" class="result-meta"></div>
         </div>
       </div>
@@ -241,8 +267,47 @@ export class AppController {
       const resultContainer = document.getElementById('result-container');
       const resultSummary = document.getElementById('result-summary');
       const resultDetails = document.getElementById('result-details');
+      const resultMetrics = document.getElementById('result-metrics');
       const resultMeta = document.getElementById('result-meta');
       const selectedFilenameInput = document.getElementById('selected-filename');
+      const metricLabels = {
+        contact_timing: 'Timing de contacto',
+        hip_rotation: 'Rotación de cadera',
+        shoulder_hip_separation: 'Separación hombro-cadera',
+        balance: 'Balance',
+      };
+      const metricValues = {
+        early: 'Temprano',
+        late: 'Tardío',
+        ok: 'Correcto',
+        good: 'Bueno',
+        low: 'Bajo',
+        stable: 'Estable',
+        unstable: 'Inestable',
+      };
+
+      function renderMetrics(metrics) {
+        resultMetrics.innerHTML = '';
+        if (!metrics) return;
+
+        Object.entries(metrics).forEach(([key, rawValue]) => {
+          const value = String(rawValue);
+          const item = document.createElement('div');
+          item.className = 'metric-item';
+
+          const label = document.createElement('div');
+          label.className = 'metric-label';
+          label.textContent = metricLabels[key] || key.replaceAll('_', ' ');
+
+          const metricValue = document.createElement('div');
+          metricValue.className = 'metric-value';
+          metricValue.textContent = metricValues[value] || value;
+
+          item.appendChild(label);
+          item.appendChild(metricValue);
+          resultMetrics.appendChild(item);
+        });
+      }
 
       async function loadExistingVideos() {
         try {
@@ -283,22 +348,30 @@ export class AppController {
         if (data.status === 'processing' || data.status === 'uploaded') {
           statusText.textContent = 'Estamos analizando tu video. Por favor espera...';
           resultContainer.classList.add('hidden');
+          renderMetrics(null);
         } else if (data.status === 'done') {
           statusText.textContent = '¡Análisis completado!';
           if (data.analysis) {
             resultContainer.classList.remove('hidden');
             resultSummary.textContent = data.analysis.summary;
             resultDetails.textContent = data.analysis.details;
+            renderMetrics(data.analysis.metrics);
 
             let meta = 'Analizado por: ' + data.analysis.analyzedBy;
             if (data.analysis.couldNotUseAIReason) {
               meta += ' (Fallback debido a: ' + data.analysis.couldNotUseAIReason + ')';
             }
             resultMeta.textContent = meta;
+          } else {
+            renderMetrics(null);
           }
         } else if (data.status === 'failed') {
-          statusText.textContent = 'Hubo un error al procesar el video.';
+          const reason = typeof data.failureReason === 'string' ? data.failureReason : '';
+          statusText.textContent = reason
+            ? 'Error al procesar: ' + reason
+            : 'Hubo un error al procesar el video.';
           resultContainer.classList.add('hidden');
+          renderMetrics(null);
         }
       }
 
@@ -354,6 +427,7 @@ export class AppController {
         try {
           const formData = new FormData(existingForm);
           const payload = Object.fromEntries(formData.entries());
+          if (!payload.view) delete payload.view;
 
           const res = await fetch('/videos/existing', {
             method: 'POST',

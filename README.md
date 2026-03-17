@@ -15,6 +15,7 @@ Backend MVP para subir videos, procesarlos de forma asíncrona y devolver feedba
 ```bash
 cp .env.example .env
 npm install
+docker compose build analysis-service
 docker compose up -d postgres redis analysis-service
 npm run start:dev
 ```
@@ -30,6 +31,7 @@ Variables opcionales:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL` (default: `gpt-4o-mini`)
 - `OPENAI_BASE_URL` (para proveedores OpenAI-compatible)
+- `ANALYSIS_API_TIMEOUT_MS` (default: `120000`)
 
 Si no hay `OPENAI_API_KEY`, el servicio devuelve feedback local determinístico.
 
@@ -47,6 +49,7 @@ pip install -r requirements.txt
 
 Además, el repo ahora incluye `pyrightconfig.json` para que Pyright/Pylance busque dependencias en `python_service/.venv` automáticamente.
 Si usas VS Code, también se agregó `.vscode/settings.json` para apuntar automáticamente al intérprete `python_service/.venv/bin/python` dentro de este workspace.
+Si aún aparecen errores, ejecuta `Python: Select Interpreter` y elige `python_service/.venv/bin/python`, luego `Developer: Reload Window`.
 
 
 ## Frontend simple para subida
@@ -96,6 +99,7 @@ Respuesta:
 {
   "videoId": "uuid",
   "status": "done",
+  "failureReason": null,
   "analysis": {
     "summary": "The stroke has a solid base, with a few fixable points.",
     "details": "Focus on these corrections: contact is late; hip rotation is limited.",
@@ -104,10 +108,14 @@ Respuesta:
       "hip_rotation": "low",
       "shoulder_hip_separation": "ok",
       "balance": "stable"
-    }
+    },
+    "analyzedBy": "llm",
+    "couldNotUseAIReason": null
   }
 }
 ```
+
+Si `status` es `failed`, `analysis` será `null` y `failureReason` incluirá el motivo legible del error.
 
 ## Microservicio de análisis
 
@@ -137,14 +145,16 @@ Contrato:
   ```
 - Output:
   ```json
-  {
-    "summary": "Your preparation is solid, but contact happens too late.",
-    "details": "Start your unit turn earlier and rotate your hips sooner before contact.",
-    "metrics": {
-      "contact_timing": "late",
-      "hip_rotation": "low",
-      "shoulder_hip_separation": "ok",
-      "balance": "stable"
-    }
-  }
-  ```
+{
+  "summary": "Your preparation is solid, but contact happens too late.",
+  "details": "Start your unit turn earlier and rotate your hips sooner before contact.",
+  "metrics": {
+    "contact_timing": "late",
+    "hip_rotation": "low",
+    "shoulder_hip_separation": "ok",
+    "balance": "stable"
+  },
+  "analyzedBy": "llm",
+  "couldNotUseAIReason": null
+}
+```

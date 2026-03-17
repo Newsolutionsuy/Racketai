@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { readdir } from 'fs/promises';
 import { join, basename } from 'path';
+import type { StrokeMetrics } from '../analysis-client/analysis-client.service';
 import { Analysis } from '../analysis/entities/analysis.entity';
 import { UploadVideoDto } from './dto/upload-video.dto';
 import { AnalyzeExistingVideoDto } from './dto/analyze-existing-video.dto';
@@ -29,13 +30,17 @@ export class VideosService {
       ...uploadVideoDto,
       videoPath,
       status: 'uploaded',
+      failureReason: null,
     });
 
     const video = await this.videosRepository.save(createdVideo);
 
     await this.videoAnalysisQueue.add('analyze-video', { videoId: video.id });
 
-    await this.videosRepository.update({ id: video.id }, { status: 'processing' });
+    await this.videosRepository.update(
+      { id: video.id },
+      { status: 'processing', failureReason: null },
+    );
 
     return {
       videoId: video.id,
@@ -67,13 +72,17 @@ export class VideosService {
       view: dto.view,
       videoPath,
       status: 'uploaded',
+      failureReason: null,
     });
 
     const video = await this.videosRepository.save(createdVideo);
 
     await this.videoAnalysisQueue.add('analyze-video', { videoId: video.id });
 
-    await this.videosRepository.update({ id: video.id }, { status: 'processing' });
+    await this.videosRepository.update(
+      { id: video.id },
+      { status: 'processing', failureReason: null },
+    );
 
     return {
       videoId: video.id,
@@ -84,10 +93,12 @@ export class VideosService {
   async getVideoById(id: string): Promise<{
     videoId: string;
     status: string;
+    failureReason: string | null;
     analysis:
       | {
           summary: string;
           details: string;
+          metrics: StrokeMetrics | null;
           analyzedBy: string;
           couldNotUseAIReason: string | null;
         }
@@ -105,10 +116,12 @@ export class VideosService {
     return {
       videoId: video.id,
       status: video.status,
+      failureReason: video.failureReason ?? null,
       analysis: video.analysis
         ? {
             summary: video.analysis.summary,
             details: video.analysis.details,
+            metrics: video.analysis.metrics ?? null,
             analyzedBy: video.analysis.analyzedBy,
             couldNotUseAIReason: video.analysis.couldNotUseAIReason ?? null,
           }
@@ -120,6 +133,7 @@ export class VideosService {
     videoId: string,
     summary: string,
     details: string,
+    metrics: StrokeMetrics | null,
     analyzedBy: string,
     couldNotUseAIReason: string | null,
   ): Promise<void> {
@@ -128,16 +142,20 @@ export class VideosService {
         videoId,
         summary,
         details,
+        metrics,
         analyzedBy,
         couldNotUseAIReason,
       }),
     );
 
-    await this.videosRepository.update({ id: videoId }, { status: 'done' });
+    await this.videosRepository.update(
+      { id: videoId },
+      { status: 'done', failureReason: null },
+    );
   }
 
-  async markAsFailed(videoId: string): Promise<void> {
-    await this.videosRepository.update({ id: videoId }, { status: 'failed' });
+  async markAsFailed(videoId: string, failureReason: string): Promise<void> {
+    await this.videosRepository.update({ id: videoId }, { status: 'failed', failureReason });
   }
 
   async getVideoForAnalysis(videoId: string): Promise<Video> {

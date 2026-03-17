@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from python_service.pose_analysis import PoseFrameFeatures
-from python_service.schemas import MetricsOutput, View
+from pose_analysis import PoseFrameFeatures
+from schemas import MetricsOutput, View
 
 
 @dataclass

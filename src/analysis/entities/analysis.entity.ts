@@ -6,6 +6,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import type { StrokeMetrics } from '../../analysis-client/analysis-client.service';
 import { Video } from '../../videos/entities/video.entity';
 
 @Entity({ name: 'analysis' })
@@ -25,6 +26,9 @@ export class Analysis {
 
   @Column('text')
   details!: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metrics?: StrokeMetrics | null;
 
   @Column({ default: 'unknown' })
   analyzedBy!: string;
